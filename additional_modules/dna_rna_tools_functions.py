@@ -86,7 +86,7 @@ def reverse_complement(seq: str) -> str:
     Return:
         string: reverse complementary sequence.
     """
-    complement__seq = complement(seq)
+    complement_seq = complement(seq)
     complement_reverse_seq = reverse(complement__seq)
 
     return complement_reverse_seq

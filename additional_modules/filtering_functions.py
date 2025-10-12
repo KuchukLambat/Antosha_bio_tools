@@ -29,8 +29,7 @@ def filter_gc(sequence: str, gc_bounds: int | tuple=(0, 100)) -> bool:
     Return:
         boolean result
     """
-    gc = (sequence.count('G') + sequence.count('G')) / len(sequence)
-    gc = gc * 100
+    gc = (sequence.count('G') + sequence.count('C')) / len(sequence) * 100
 
     min_gc_bound, max_gc_bound = get_bounds(gc_bounds)
     

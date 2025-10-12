@@ -16,7 +16,7 @@ git clone https://github.com/KuchukLambat/Antosha_bio_tools
 ~~~
 
 
-##Working with the tools
+## Working with the tools
 
 **`run_dna_rna_tools`** to work with this function, it is necessary to pass string variables, 
 where the last argument indicates the name of the operation to be performed.
@@ -31,9 +31,9 @@ Implemented functions:
 
 -`complement` - return the complementary sequence.
 
--`reverse_complement` - return the reverse complementary sequence.
+-`reverse_complement` - return the reverse complementary sequence.<br>
 
-
+______
 **`def filter_fastq`** this function filters readings by a set of conditions: 
 
 -`filter_gc`  - function filters readings by GC composition.
@@ -44,5 +44,10 @@ Implemented functions:
 
 -adding function `get_bounds` to set a range of values.
 
+## Module bio_files_processor.py
+It contains three functions:
+`filter_fastq` - The function filters readings by a set of conditions: GC composition, length and quality.
+`convert_multiline_fasta_to_oneline` - This function converts multiline fasta to oneline
+parse_blast_output - This function parse blast output and writes the name of the proteins in alphabetical order to the file
 
 Athour: Shaposhnikov Anton

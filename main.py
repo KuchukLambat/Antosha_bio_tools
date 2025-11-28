@@ -1,5 +1,5 @@
-from additional_modules import dna_rna_tools_functions as is_nucleic_acid, transcribe, reverse, complement, reverse_complement
-from additional_modules import filtering_functions as get_bounds, filter_gc, filter_length, filter_quality
+from additional_modules.dna_rna_tools_functions import is_nucleic_acid, transcribe, reverse, complement, reverse_complement
+from additional_modules.filtering_functions import get_bounds, filter_gc, filter_length, filter_quality
 import os
 
 def run_dna_rna_tools(*seqs: str) -> list[str]:
@@ -77,12 +77,13 @@ def filter_fastq(input_fastq: str, gc_bounds: tuple = (0, 100),
         
         for line in input_fastq:
             key = line
-            sequence = input_fastq.readline()
+            sequence = input_fastq.readline().strip()
             plus_string = input_fastq.readline()
-            sequence_quality = input_fastq.readline()
+            sequence_quality = input_fastq.readline().strip()
+            print(sequence, sequence_quality)
 
             if (filter_gc(sequence, gc_bounds) and filter_length(sequence, length_bounds) and 
             filter_quality(sequence_quality, quality_threshold)):
                 
-                output_fastq_record = f"{key}{sequence}{plus_string}{sequence_quality}"
+                output_fastq_record = f"{key}{sequence}\n{plus_string}{sequence_quality}\n"
                 output_fastq.write(output_fastq_record)

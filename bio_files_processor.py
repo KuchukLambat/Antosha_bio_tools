@@ -10,19 +10,16 @@ def convert_multiline_fasta_to_oneline(input_file: str, output_file: str):
     with (open(input_file, 'r') as input_file,  
         open(output_file, 'w') as output_file):
         
-        description = input_file.readline()
-        sequence = str()
+        output_file.write(input_file.readline())
             
         for line in input_file:
             if line.startswith('>'):
-                fasta_record = f'\n{description}{sequence}'
-                output_file.write(fasta_record)
-                    
-                description = line
-                sequence = str()
-                    
+                output_file.write('\n' + line)
+                
             else:
-                sequence += line.strip()
+                output_file.write(line.strip())
+
+        output_file.write('\n')
  
  
 def lower_chr(string: str):

@@ -1,89 +1,256 @@
-from additional_modules.dna_rna_tools_functions import is_nucleic_acid, transcribe, reverse, complement, reverse_complement
-from additional_modules.filtering_functions import get_bounds, filter_gc, filter_length, filter_quality
+from abc import ABC, abstractmethod
 import os
+from Bio import SeqIO
+from Bio.SeqUtils import gc_fraction
 
-def run_dna_rna_tools(*seqs: str) -> list[str]:
+
+class BiologicalSequence(ABC):
+    """
+    An abstract class for working with biological sequences.
+    """
+    
+    @abstractmethod
+    def __len__(self):
+        pass
+
+    @abstractmethod
+    def __getitem__(self, key):
+        pass
+
+    @abstractmethod
+    def __str__(self):
+        pass
+
+    @abstractmethod
+    def __repr__(self):
+        pass
+
+    @abstractmethod
+    def check_alphabet(self):
+        pass
+
+
+class NucleicAcidSequence(BiologicalSequence):
+    """
+    A class for working with nucleotide sequences.
+    
+    Attributes:
+        seq (str): nucleotide sequence.
+    """
+    
+    def __init__(self, seq):
+        self.seq = seq
+
+    def __len__(self):
+        return len(self.seq)
+
+    def __getitem__(self, key):
+        return self.seq[key]
+
+    def __str__(self):
+        return self.seq
+
+    def __repr__(self):
+        return self.seq
+
+    def check_alphabet(self):
+        """
+        Check if the sequence matches the specified alphabet.
+    
+        Args:
+            str: nucleotide sequence
+    
+        Return:
+            boolean result
+        """
+        return set(self.seq.upper()) <= {'A', 'G', 'C', 'T', 'U'}
+
+    @property
+    @abstractmethod
+    def _complement_nucleotides(self):
+        """
+        Return the complementarity rule of the inheritor object.
+        """
+        pass
+        
+    def complement(self):
+        """
+        Create a complementary nucleotide sequence.
+    
+        Args:
+            str : nucleotide sequence.
+            
+        Return:
+            object : complementary sequence.
+        """
+        complement_seq = self.seq.translate(self._complement_nucleotides)
+        return self.__class__(complement_seq)
+
+    def reverse(self):
+        """ 
+        Reverse the nucleotide sequence.
+        
+        Args:
+            str : nucleotide sequence.
+            
+        Return:
+            object : reversed sequence.
+        """
+        return self.__class__(self.seq[::-1])
+
+    def reverse_complement(self):
+        """ 
+        Create a reverse complementary nucleotide sequence.
+
+        Args:
+            str : nucleotide sequence.
+            
+        Return:
+            object : reverse complementary sequence.
+        """
+        return self.complement().reverse()
+        
+
+class DNASequence(NucleicAcidSequence):
+    """
+    A class for working with DNA sequences.
+    """
+    
+    @property
+    def _complement_nucleotides(self):
+        """ 
+        Define the complementarity rule.
+        
+        Return:
+            tuple
+        """
+        return str.maketrans('ATGCatgc', 'TACGtacg')
+
+    def transcribe(self):
+        """ 
+        Transcribes DNA into RNA.
+
+        Args:
+            str : DNA sequence
+
+        Return:
+            RNASequence : RNA sequence
+        """
+        return RNASequence(self.seq.replace("T", "U").replace("t", "u"))
+
+
+class RNASequence(NucleicAcidSequence):
+    """
+    A class for working with RNA sequences.
+    """
+    
+    @property
+    def _complement_nucleotides(self):
+        """ 
+        Define the complementarity rule.
+
+        Return:
+            tuple
+        """
+        return str.maketrans('AUGCaugc', 'UACGuacg')
+    
+
+class AminoAcidSequence(BiologicalSequence):
+    """
+    A class for working with amino acid sequences.
     """
 
-    The function accepts an arbitrary number of arguments with DNA or RNA sequences,
-    as well as the name of the procedure to be performed (this is always the last argument, procedure).
-    After that, it performs the specified action on all the transmitted sequences and returns the result.
+    def __init__(self, seq):
+        self.seq = seq
+
+    def __len__(self):
+        return len(self.seq)
+
+    def __getitem__(self, key):
+        return self.seq[key]
+
+    def __str__(self):
+        return self.seq
+
+    def __repr__(self):
+        return self.seq
+
+    def check_alphabet(self):
+        """
+        Check if the sequence matches the specified alphabet.
+    
+        Args:
+            str: amino acid sequence.
+    
+        Return:
+            boolean result
+        """
+        return set(self.seq.upper()) <= set('ACDEFGHIKLMNPQRSTVWY')
+    
+        
+    def get_approximate_peptide_mass(self):
+        """ 
+        Calculates the approximate mass of the peptide.
+
+        Args:
+            str : Amino acid sequence.
+
+        Return:
+            float : Approximate mass of the peptide.
+        """
+        return len(self.seq) * 110
+
+
+def fit(value, bounds: int | tuple) -> bool:
+    """
+    The function outputs True if value is in a range.
     
     Args:
-        data (strings): string or strings of data, where the last argument is a procedure.
-        
+        value: number
+        data: number or tuple of numbers.
+    
     Return:
-        list or string: processed sequences
+        bool
     """
+    if type(bounds) == int:
+        min_bound = 0
+        max_bound = bounds
+    
+    else:
+        min_bound = min(bounds)
+        max_bound = max(bounds)
 
-    *seqs, procedure = seqs
-
-    if procedure not in (
-        "is_nucleic_acid",
-        "transcribe",
-        "reverse",
-        "complement",
-        "reverse_complement",
-    ):
-        return None
-
-    outputs = list()
-
-    for seq in seqs:
-
-        output = is_nucleic_acid(seq)
-
-        if output:
-            dict_procedures = {
-                "is_nucleic_acid": is_nucleic_acid,
-                "transcribe": transcribe,
-                "reverse": reverse,
-                "complement": complement,
-                "reverse_complement": reverse_complement
-            }
-
-            output = dict_procedures[procedure](seq)
-            
-        else:
-            output = f"Your sequence has extraneous characters: {seq}"
-
-        outputs.append(output)
-
-    if len(outputs) == 1:
-        return outputs[0]
-    return outputs
+    return min_bound <= value <= max_bound
 
 
-def filter_fastq(input_fastq: str, gc_bounds: tuple = (0, 100), 
+def filter_fastq(input_fastq_file: str, gc_bounds: tuple = (0, 100), 
                  length_bounds: tuple = (0, 2**32), quality_threshold: int = 0,
-                output_fastq: str = 'filtered/output_fastq.fastq'):
+                output_fastq_file: str = 'filtered/output_fastq.fastq'):
     """
     The function filters readings by a set of conditions: GC composition, length and quality.
     
     Args:
-        input_fastq: a string with path to the file; gc_bounds, length_bounds, quality_threshold: 
-        integer or tuple of integers.
+        input_fastq_file: a string with path to the file; 
+        gc_bounds, length_bounds, quality_threshold: number or tuple of numbers.
         
     Return:
-        output_fastq: file with filtered readings
+        output_fastq_file: file with filtered readings
     """
-    if not os.path.isfile(input_fastq):
+    if not os.path.isfile(input_fastq_file):
         return None
 
     if not os.path.isdir('filtered'):
         os.mkdir('filtered')
-    
-    with (open(input_fastq, 'r') as input_fastq, open(output_fastq, 'w') as output_fastq):
         
-        for line in input_fastq:
-            key = line
-            sequence = input_fastq.readline().strip()
-            plus_string = input_fastq.readline()
-            sequence_quality = input_fastq.readline().strip()
-            print(sequence, sequence_quality)
+    filtered_reads = list()
 
-            if (filter_gc(sequence, gc_bounds) and filter_length(sequence, length_bounds) and 
-            filter_quality(sequence_quality, quality_threshold)):
-                
-                output_fastq_record = f"{key}{sequence}\n{plus_string}{sequence_quality}\n"
-                output_fastq.write(output_fastq_record)
+    for rec in SeqIO.parse(input_fastq_file, "fastq"):
+        rec_gc_fraction = 100 * gc_fraction(rec.seq)
+        rec_length = len(rec)
+        rec_quality_score = sum(rec.letter_annotations["phred_quality"]) / rec_length
+        
+        if (fit(rec_gc_fraction, gc_bounds) and fit(rec_length, length_bounds) and 
+            quality_threshold <= rec_quality_score):
+            filtered_reads.append(rec)
+
+    SeqIO.write(filtered_reads, output_fastq_file, "fastq")

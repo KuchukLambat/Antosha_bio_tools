@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 from Bio import SeqIO
 from Bio.SeqUtils import gc_fraction
+from loguru import logger
 
 
 class BiologicalSequence(ABC):
@@ -237,6 +238,7 @@ def filter_fastq(input_fastq_file: str, gc_bounds: tuple = (0, 100),
         output_fastq_file: file with filtered readings
     """
     if not os.path.isfile(input_fastq_file):
+        logger.error(f"File ({input_fastq_file}) not found.")
         return None
 
     if not os.path.isdir('filtered'):
@@ -254,3 +256,4 @@ def filter_fastq(input_fastq_file: str, gc_bounds: tuple = (0, 100),
             filtered_reads.append(rec)
 
     SeqIO.write(filtered_reads, output_fastq_file, "fastq")
+    logger.info(f"Saved {len(filtered_reads)} reads in {output_fastq_file}")

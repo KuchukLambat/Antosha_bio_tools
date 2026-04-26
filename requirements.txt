@@ -1,1 +1,4 @@
-Biopython
+biopython
+argparse
+loguru
+pytest
